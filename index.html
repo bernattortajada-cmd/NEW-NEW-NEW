@@ -53,7 +53,7 @@ function log(m,c=''){const d=document.createElement('div');d.className=c;d.textC
   // Cambia a .wav si tus archivos son WAV:
   const audioA = new Audio('assets/glass_A_vocal_loop.mp3');
   const audioB = new Audio('assets/glass_B_beat_loop.mp3');
-  audioA.loop = true; audioB.loop = true; audioA.volume = 0.85; audioB.volume = 0.9;
+  audioA.loop = true; audioB.loop = true; audioA.volume = 10; audioB.volume = 10;
 
   let eyesClosed=false, mouthOpen=false, eyesEMA=0, mouthEMA=0;
   const lerp=(a,b,t)=>a+(b-a)*t;
