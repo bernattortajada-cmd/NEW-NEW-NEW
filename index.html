@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Glass Pulse — FIX</title>
+  <title>Glass Pulse — AUDIO FIX</title>
   <style>
     :root { --bg:#0b0b0c; --fg:#e7e7ea; }
     html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu;}
@@ -26,7 +26,7 @@
   <div class="stage" id="stage">
     <video id="cam" playsinline muted></video>
     <canvas id="fx"></canvas>
-    <div class="overlay" id="ovl"><div class="cta">Toca aquí para iniciar la cámara</div></div>
+    <div class="overlay" id="ovl"><div class="cta">Toca aquí para iniciar cámara + audio</div></div>
   </div>
   <div class="badges">
     <span class="pill"><span class="dot" id="eyeDot"></span>Ojos cerrados ▸ A</span>
@@ -35,7 +35,6 @@
   <div class="log" id="log"></div>
 </div>
 
-<!-- Carga MediaPipe -->
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
 <script>
@@ -50,10 +49,21 @@ function log(m,c=''){const d=document.createElement('div');d.className=c;d.textC
   const eyeDot = document.getElementById('eyeDot');
   const mouthDot = document.getElementById('mouthDot');
 
-  // Cambia a .wav si tus archivos son WAV:
-  const audioA = new Audio('assets/glass_A_vocal_loop.mp3');
-  const audioB = new Audio('assets/glass_B_beat_loop.mp3');
-  audioA.loop = true; audioB.loop = true; audioA.volume = 10; audioB.volume = 10;
+  // === CONFIG: usa '.mp3' o cambia a '.wav' según tus archivos ===
+  const EXT = '.mp3'; // <-- si tus archivos son WAV, cambia a '.wav'
+  const audioA = new Audio('assets/glass_A_vocal_loop'+EXT);
+  const audioB = new Audio('assets/glass_B_beat_loop'+EXT);
+  audioA.loop = true; audioB.loop = true; audioA.preload='auto'; audioB.preload='auto';
+  audioA.volume = 0.9; audioB.volume = 0.95;
+
+  // iOS/safari: desbloquear audio en el primer toque
+  async function unlockAudio(){
+    try{
+      await audioA.play(); audioA.pause(); audioA.currentTime=0;
+      await audioB.play(); audioB.pause(); audioB.currentTime=0;
+      log('Audio desbloqueado ✅','ok');
+    }catch(e){ log('No se pudo desbloquear el audio: '+e.message,'err'); }
+  }
 
   let eyesClosed=false, mouthOpen=false, eyesEMA=0, mouthEMA=0;
   const lerp=(a,b,t)=>a+(b-a)*t;
@@ -79,6 +89,7 @@ function log(m,c=''){const d=document.createElement('div');d.className=c;d.textC
   async function start(){
     try{
       ovl.style.display='none';
+      await unlockAudio(); // <-- clave para iOS/Safari
       log('Pidiendo permiso de cámara…','warn');
       const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user', width:{ideal:720}, height:{ideal:1280}}, audio:false});
       video.srcObject = s; await video.play(); log('Cámara OK ✅','ok');
@@ -96,16 +107,16 @@ function log(m,c=''){const d=document.createElement('div');d.className=c;d.textC
         eyeDot.classList.toggle('on', eyesClosed); mouthDot.classList.toggle('on', mouthOpen); drawGlass(lm);
       });
       new Camera(video, { onFrame: async () => { await faceMesh.send({image: video}); }, width: video.videoWidth, height: video.videoHeight }).start();
-      log('AR iniciado ✅','ok');
+      log('AR + audio listos ✅','ok');
     }catch(e){
       log('Error al iniciar: '+e.message,'err');
       ovl.style.display='flex';
-      ovl.querySelector('.cta').textContent='Permite la cámara (icono del candado) y toca aquí de nuevo';
+      ovl.querySelector('.cta').textContent='Permite cámara/sonido (candado) y toca aquí de nuevo';
     }
   }
 
-  document.getElementById('stage').addEventListener('click', start);
-  document.getElementById('stage').addEventListener('touchstart', start);
+  document.getElementById('stage').addEventListener('click', start, {once:true});
+  document.getElementById('stage').addEventListener('touchstart', start, {once:true});
 })();</script>
 </body>
 </html>
